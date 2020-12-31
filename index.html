@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="jQuery.js"></script>
+</head>
+
+<body>
+    <div>
+        <form name="frmName" id="frmName">
+
+            <input type="text" name="iName" id="iName" placeholder="Enter your name" required>
+            <input type="text" name="iMessage" id="iMessage" placeholder="Enter your messege" required>
+
+            <input type="submit" id="frmSubmit" value="Submit">
+            <div id="rMessage"></div>
+        </form>
+    </div>
+    <script type="text/javascript">
+        var name = '';
+
+
+        $('#frmName').on("submit", function (event) {
+            event.preventDefault();
+            $('#iName').attr("type", "hidden");
+            name = $('#iName').val();
+            message = $('#iMessage').val();
+            $('#iMessage').val('');
+
+            try {
+                ws = new EventSource('serverGet.php?name=' + name);
+            } catch (e) {
+                console.error("Could not create eventSource ", e);
+            }
+
+            ws.send = function send(message) {
+
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function () {
+                    if (this.readyState != 4) {
+                        return;
+                    }
+                    if (this.status != 200) {
+                        console.log("Error sending to server with message: " + message);
+                    }
+                };
+                xhttp.open('POST', 'serverPost.php', true);
+                xhttp.setRequestHeader("Content-Type", "Application/X-Www-Form-Urlencoded");
+                xhttp.send(message);
+            }
+
+            ws.onmessage = function (e) {
+                console.log(e.data);
+                parsedData = JSON.parse(e.data) 
+                $('#rMessage').append(`<p>${parsedData['user']}: ${parsedData['type']}</p>`);
+            }
+
+            function publish(event, data) {
+                ws.send(JSON.stringify({
+                    name: name,
+                    event: event,
+                    data: data
+                }));
+            }
+
+            publish(message, 'no data');
+
+        });
+
+    </script>
+</body>
+
+</html>
